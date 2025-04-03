@@ -1,5 +1,5 @@
 from typing import List
-from models.model import OrderRequest, Vehicle
+from models.model import Order, OrderRequest, Vehicle
 
 
 class DeliveryService:
@@ -19,6 +19,7 @@ class DeliveryService:
         pass
 
     @staticmethod
-    def get_optimal_path(order_id: int) -> Vehicle:
+    def get_optimal_path(order: Order) -> Vehicle:
+        # .... object can tra ve (graph, hay cai gi do )... = PathFinding.find_path(order.start,order.destination)
         pass
 

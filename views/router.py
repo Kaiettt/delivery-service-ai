@@ -10,9 +10,10 @@ router = APIRouter(prefix="/delivery", tags=["Delivery"])
 
 
 # lay tuyen duong toi uu
-@router.post("/get-path/{order_id}")
-def get_path():
-    return delivery_service.get_optimal_path(order_id)
+# fake data để implement thuật toán
+@router.post("/get-path", ... Trả về cái gì cho frontend ghi vô dùm tui ... tạo model responce mới trong file model.py .....)
+def get_path(order: Order):
+    return delivery_service.get_optimal_path(order)
 
 # tao don hang
 @router.post("/make-order", response_model=OrderResponse)
