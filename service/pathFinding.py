@@ -1,7 +1,8 @@
-from models.model import Location
+# from models.model import Location
 import math
 import osmnx as ox
 import heapq
+import matplotlib.pyplot as plt
 
 class PathFinding:    
     @staticmethod
@@ -10,7 +11,8 @@ class PathFinding:
         Nhận 2 tuple tọa độ và loại xe TRUCK, MOTORBIKE, CAR (mặc định).
         """
         newPathSearch = PathFinding(vehicle_type)
-        return newPathSearch.a_star_search(start, destination)
+        # return newPathSearch.a_star_search(start, destination)
+        return newPathSearch.nodes_to_edges(newPathSearch.a_star_search(start, destination))
     
     def __init__(self, vehicle_type = 'CAR'):
         self.G = ox.load_graphml(filepath=f'graphs/{vehicle_type.lower()}_graph_hcm.graphml')
@@ -113,3 +115,14 @@ class PathFinding:
             lon = self.G.nodes[node]['x']
             coords.append((lat, lon))
         return coords
+
+
+start_coord = (10.792323537761382, 106.66625453682362)
+end_coord = (10.793902399774515, 106.66435883377665)
+G = PathFinding('CAR').G
+route = PathFinding.find_path(start_coord, end_coord, 'CAR')
+
+print(route)
+
+# fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0)
+# plt.show()
