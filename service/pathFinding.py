@@ -4,15 +4,15 @@ import osmnx as ox
 import heapq
 import matplotlib.pyplot as plt
 
-class PathFinding:    
+class PathFinding:
     @staticmethod
     def find_path(start:tuple, destination:tuple, vehicle_type = 'CAR'):
         """
         Nhận 2 tuple tọa độ và loại xe TRUCK, MOTORBIKE, CAR (mặc định).
         """
         newPathSearch = PathFinding(vehicle_type)
-        # return newPathSearch.a_star_search(start, destination)
-        return newPathSearch.nodes_to_edges(newPathSearch.a_star_search(start, destination))
+        return newPathSearch.a_star_search(start, destination)
+        # return newPathSearch.nodes_to_edges(newPathSearch.a_star_search(start, destination))
     
     def __init__(self, vehicle_type = 'CAR'):
         self.G = ox.load_graphml(filepath=f'graphs/{vehicle_type.lower()}_graph_hcm.graphml')
@@ -34,10 +34,10 @@ class PathFinding:
         # Nhân với bán kính trái đất (khoảng 6371 km)
         distance = 6371 * c
         return distance
-    
-    def a_star_search(self, start_coord:tuple, destination_coord:tuple):
+
+    def a_star_search(self, start_coord: tuple, destination_coord: tuple):
         """
-        Tìm đường dùng A*
+        Tìm đường dùng A*, trả về danh sách các tọa độ (lat, lon).
         """
         start = ox.distance.nearest_nodes(self.G, X=start_coord[1], Y=start_coord[0])
         goal = ox.distance.nearest_nodes(self.G, X=destination_coord[1], Y=destination_coord[0])
@@ -46,7 +46,7 @@ class PathFinding:
         explored = set()
         parents = {start: None}
         costs = {start: 0}
-        
+
         while frontier:
             f_value, current = heapq.heappop(frontier)
 
@@ -55,8 +55,12 @@ class PathFinding:
                 while current is not None:
                     path.append(current)
                     current = parents[current]
-                return path[::-1]
-            
+                path.reverse()
+
+                # ✅ Convert node IDs to (lat, lon) tuples
+                latlon_path = [(self.G.nodes[node]['y'], self.G.nodes[node]['x']) for node in path]
+                return latlon_path
+
             if current in explored:
                 continue
             explored.add(current)
@@ -64,15 +68,16 @@ class PathFinding:
             for neighbor in self.G.neighbors(current):
                 if neighbor in explored:
                     continue
-                shortest_egde = min(self.G.get_edge_data(current, neighbor).values(), key=lambda x: x['length'])
-                new_cost_neighbor = costs[current] + shortest_egde['length']
+                shortest_edge = min(self.G.get_edge_data(current, neighbor).values(), key=lambda x: x['length'])
+                new_cost_neighbor = costs[current] + shortest_edge['length']
                 if (neighbor not in costs) or (new_cost_neighbor < costs[neighbor]):
                     costs[neighbor] = new_cost_neighbor
                     f_value = new_cost_neighbor + self.haversine(neighbor, goal)
                     heapq.heappush(frontier, (f_value, neighbor))
                     parents[neighbor] = current
-        
+
         return None
+
     
     def straight_path(path:list):
         """
@@ -117,12 +122,23 @@ class PathFinding:
         return coords
 
 
-start_coord = (10.792323537761382, 106.66625453682362)
-end_coord = (10.793902399774515, 106.66435883377665)
+start_coord = (10.85974479875821, 106.78019379789899)
+end_coord = (10.850807473074543, 106.77127365080172)
 G = PathFinding('CAR').G
 route = PathFinding.find_path(start_coord, end_coord, 'CAR')
 
 print(route)
 
 # fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0)
+# plt.show()
+
+# # Plot the route
+# fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0, show=False, close=False)
+
+# # Add node labels to the route
+# for node in route:
+#     x = G.nodes[node]['x']
+#     y = G.nodes[node]['y']
+#     ax.text(x, y, str(node), fontsize=8, color='red', ha='center', va='center')
+
 # plt.show()
