@@ -5,7 +5,7 @@ import json
 import random
 # import matplotlib.pyplot as plt
 
-class PathFinding:    
+class PathFinding:
     @staticmethod
     def find_path(start:tuple, destination:tuple, vehicle_type = 'CAR'):
         """
@@ -48,7 +48,7 @@ class PathFinding:
         # Nhân với bán kính trái đất (khoảng 6371 km)
         distance = 6371 * c
         return distance
-    
+
     def ALT(self, node, goal):
         """
         Heuristic dùng landmark
@@ -70,7 +70,7 @@ class PathFinding:
 
     def a_star_search(self, start_coord:tuple, destination_coord:tuple):
         """
-        Tìm đường dùng A*
+        Tìm đường dùng A*, trả về danh sách các tọa độ (lat, lon).
         """
         start = ox.distance.nearest_nodes(self.G, X=start_coord[1], Y=start_coord[0])
         goal = ox.distance.nearest_nodes(self.G, X=destination_coord[1], Y=destination_coord[0])
@@ -79,7 +79,7 @@ class PathFinding:
         explored = set()
         parents = {start: None}
         costs = {start: 0}
-        
+
         while frontier:
             f_value, current = heapq.heappop(frontier)
 
@@ -88,8 +88,12 @@ class PathFinding:
                 while current is not None:
                     path.append(current)
                     current = parents[current]
-                return path[::-1]
-            
+                path.reverse()
+
+                # ✅ Convert node IDs to (lat, lon) tuples
+                latlon_path = [(self.G.nodes[node]['y'], self.G.nodes[node]['x']) for node in path]
+                return latlon_path
+
             if current in explored:
                 continue
             explored.add(current)
@@ -97,15 +101,16 @@ class PathFinding:
             for neighbor in self.G.neighbors(current):
                 if neighbor in explored:
                     continue
-                shortest_egde = min(self.G.get_edge_data(current, neighbor).values(), key=lambda x: x['length'])
-                new_cost_neighbor = costs[current] + shortest_egde['length']
+                shortest_edge = min(self.G.get_edge_data(current, neighbor).values(), key=lambda x: x['length'])
+                new_cost_neighbor = costs[current] + shortest_edge['length']
                 if (neighbor not in costs) or (new_cost_neighbor < costs[neighbor]):
                     costs[neighbor] = new_cost_neighbor
                     f_value = new_cost_neighbor + self.haversine(neighbor, goal)
                     heapq.heappush(frontier, (f_value, neighbor))
                     parents[neighbor] = current
-        
+
         return None
+
     
     def a_star_landmark(self, start_coord:tuple, destination_coord:tuple):
         """
@@ -273,4 +278,15 @@ class PathFinding:
 
 # G = PathFinding('CAR').G
 # fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0)
+# plt.show()
+
+# # Plot the route
+# fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0, show=False, close=False)
+
+# # Add node labels to the route
+# for node in route:
+#     x = G.nodes[node]['x']
+#     y = G.nodes[node]['y']
+#     ax.text(x, y, str(node), fontsize=8, color='red', ha='center', va='center')
+
 # plt.show()

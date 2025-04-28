@@ -16,6 +16,7 @@ class OrderStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 class Location(BaseModel):
+    name:str =Field(...,example="Thu DUc")
     x: float = Field(..., example=10.7769)
     y: float = Field(..., example=106.7009)
 
