@@ -173,8 +173,8 @@ class PathFinding:
             
             list_neighbors = list(self.G.neighbors(current))
             if not list_neighbors:
-                # return None
-                return node_path
+                return None
+                # return node_path
             
             # Dictionary chứa heuristic các node kề
             distances = {neighbor: self.haversine(neighbor, goal) for neighbor in list_neighbors}
@@ -182,8 +182,8 @@ class PathFinding:
             next_node = min(distances, key=distances.get)
             
             if distances[next_node] >= self.haversine(current, goal):
-                # return None
-                return node_path
+                return None
+                # return node_path
 
             current = next_node
             node_path.append(current)
@@ -206,8 +206,8 @@ class PathFinding:
             
             neighbors = list(self.G.neighbors(current))
             if not neighbors:
-                # return None
-                return node_path
+                return None
+                # return node_path
             
             next_node = random.choice(neighbors)
             
@@ -224,8 +224,8 @@ class PathFinding:
                     current = next_node
                     node_path.append(current)
             T *= cooling_rate
-        # return None
-        return node_path
+        return None
+        # return node_path
     
     def straight_path(self, path:list):
         """
