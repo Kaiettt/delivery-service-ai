@@ -2,24 +2,29 @@
 import math
 import osmnx as ox
 import heapq
-import matplotlib.pyplot as plt
+import json
+# import matplotlib.pyplot as plt
 
 class PathFinding:    
     @staticmethod
     def find_path(start:tuple, destination:tuple, vehicle_type = 'CAR'):
         """
-        Nhận 2 tuple tọa độ và loại xe TRUCK, MOTORBIKE, CAR (mặc định).
+        Nhận 2 tuple tọa độ và loại xe TRUCK, MOTORBIKE, CAR (mặc định)
         """
         newPathSearch = PathFinding(vehicle_type)
-        # return newPathSearch.a_star_search(start, destination)
-        return newPathSearch.nodes_to_edges(newPathSearch.a_star_search(start, destination))
+        path = newPathSearch.a_star_landmark(start, destination)
+        # path = newPathSearch.a_star_search(start, destination)
+        
+        return newPathSearch.nodes_to_coord(path)
     
     def __init__(self, vehicle_type = 'CAR'):
         self.G = ox.load_graphml(filepath=f'graphs/{vehicle_type.lower()}_graph_hcm.graphml')
+        with open(f'graphs/{vehicle_type.lower()}_landmarks.json', 'r') as f:
+            self.landmarks = json.load(f)
 
     def haversine(self, node1, node2):
         """
-        Heuristic khoảng cách 2 node.
+        Heuristic khoảng cách 2 node
         """
         # Lấy vĩ độ và kinh độ của 2 node
         lat1, lon1 = self.G.nodes[node1]['y'], self.G.nodes[node1]['x']
@@ -35,6 +40,25 @@ class PathFinding:
         distance = 6371 * c
         return distance
     
+    def ALT(self, node, goal):
+        """
+        Heuristic dùng landmark
+        """
+        node_key = str(node)
+        goal_key = str(goal)
+        h_value = None
+        for landmark in self.landmarks:
+            if node_key not in landmark:
+                continue
+            if goal_key not in landmark:
+                continue
+            if h_value is None:
+                h_value = abs(landmark[node_key] - landmark[goal_key])
+            else:
+                h_value = max(h_value, abs(landmark[node_key] - landmark[goal_key]))
+        return h_value
+
+
     def a_star_search(self, start_coord:tuple, destination_coord:tuple):
         """
         Tìm đường dùng A*
@@ -74,6 +98,53 @@ class PathFinding:
         
         return None
     
+    def a_star_landmark(self, start_coord:tuple, destination_coord:tuple):
+        """
+        Tìm đường dùng A* landmark
+        """
+        start = ox.distance.nearest_nodes(self.G, X=start_coord[1], Y=start_coord[0])
+        goal = ox.distance.nearest_nodes(self.G, X=destination_coord[1], Y=destination_coord[0])
+
+        alt_value = self.ALT(start, goal)
+        if alt_value is None:
+            return None
+
+        frontier = [(alt_value, start)]
+        explored = set()
+        parents = {start: None}
+        costs = {start: 0}
+        
+        while frontier:
+            f_value, current = heapq.heappop(frontier)
+
+            if current == goal:
+                path = []
+                while current is not None:
+                    path.append(current)
+                    current = parents[current]
+                return path[::-1]
+            
+            if current in explored:
+                continue
+            explored.add(current)
+
+            for neighbor in self.G.neighbors(current):
+                if neighbor in explored:
+                    continue
+                shortest_egde = min(self.G.get_edge_data(current, neighbor).values(), key=lambda x: x['length'])
+                new_cost_neighbor = costs[current] + shortest_egde['length']
+                if (neighbor not in costs) or (new_cost_neighbor < costs[neighbor]):
+                    costs[neighbor] = new_cost_neighbor
+
+                    alt_value = self.ALT(neighbor, goal)
+                    if alt_value is None:
+                        continue
+                    f_value = new_cost_neighbor + alt_value
+                    heapq.heappush(frontier, (f_value, neighbor))
+                    parents[neighbor] = current
+        
+        return None
+    
     def straight_path(path:list):
         """
         Xóa các đường đi vòng.
@@ -91,7 +162,7 @@ class PathFinding:
 
     def nodes_to_edges(self, node_path:list):
         """
-        Chuyển đổi danh sách các node thành danh sách các edge.
+        Chuyển đổi danh sách các node thành danh sách các edge
         """
         edge_path = []
         # Lấy node và node kế tiếp
@@ -107,7 +178,7 @@ class PathFinding:
 
     def nodes_to_coord(self, node_path:list):
         """
-        Chuyển đổi danh sách các node thành danh sách các tọa độ (lat, lon).
+        Chuyển đổi danh sách các node thành danh sách các tọa độ (lat, lon)
         """
         coords = []
         for node in node_path:
@@ -117,12 +188,12 @@ class PathFinding:
         return coords
 
 
-start_coord = (10.792323537761382, 106.66625453682362)
-end_coord = (10.793902399774515, 106.66435883377665)
-G = PathFinding('CAR').G
-route = PathFinding.find_path(start_coord, end_coord, 'CAR')
+# start_coord = (10.792323537761382, 106.66625453682362)
+# end_coord = (10.793902399774515, 106.66435883377665)
+# route = PathFinding.find_path(start_coord, end_coord, 'CAR')
 
-print(route)
+# print(route)
 
+# G = PathFinding('CAR').G
 # fig, ax = ox.plot_graph_route(G, route, route_linewidth=4, node_size=0)
 # plt.show()
