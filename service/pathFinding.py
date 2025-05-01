@@ -1,8 +1,8 @@
-# from models.model import Location
 import math
 import osmnx as ox
 import heapq
 import json
+import random
 # import matplotlib.pyplot as plt
 
 class PathFinding:
@@ -12,10 +12,20 @@ class PathFinding:
         Nhận 2 tuple tọa độ và loại xe TRUCK, MOTORBIKE, CAR (mặc định)
         """
         newPathSearch = PathFinding(vehicle_type)
+
         path = newPathSearch.a_star_landmark(start, destination)
+
         # path = newPathSearch.a_star_search(start, destination)
+
+        # path = newPathSearch.hill_climbing_search(start, destination)
+
+        # path = newPathSearch.simulated_annealing_search(start, destination)
+        # path = newPathSearch.straight_path(path)
         
         return newPathSearch.nodes_to_coord(path)
+        # return newPathSearch.nodes_to_edges(path)
+        return path
+    
     def __init__(self, vehicle_type = 'CAR'):
         self.G = ox.load_graphml(filepath=f'graphs/{vehicle_type.lower()}_graph_hcm.graphml')
         with open(f'graphs/{vehicle_type.lower()}_landmarks.json', 'r') as f:
@@ -78,11 +88,7 @@ class PathFinding:
                 while current is not None:
                     path.append(current)
                     current = parents[current]
-                path.reverse()
-
-                # ✅ Convert node IDs to (lat, lon) tuples
-                latlon_path = [(self.G.nodes[node]['y'], self.G.nodes[node]['x']) for node in path]
-                return latlon_path
+                return path[::-1]
 
             if current in explored:
                 continue
@@ -149,7 +155,75 @@ class PathFinding:
         
         return None
     
-    def straight_path(path:list):
+    def hill_climbing_search(self, start_coord:tuple, destination_coord:tuple):
+        """
+        Tìm đường dùng hill climbing
+        """
+        start = ox.distance.nearest_nodes(self.G, X=start_coord[1], Y=start_coord[0])
+        goal = ox.distance.nearest_nodes(self.G, X=destination_coord[1], Y=destination_coord[0])
+
+        current = start
+        node_path = [current]
+
+        while current != goal:
+            
+            list_neighbors = list(self.G.neighbors(current))
+            if not list_neighbors:
+                return None
+                # return node_path
+            
+            # Dictionary chứa heuristic các node kề
+            distances = {neighbor: self.haversine(neighbor, goal) for neighbor in list_neighbors}
+            
+            next_node = min(distances, key=distances.get)
+            
+            if distances[next_node] >= self.haversine(current, goal):
+                return None
+                # return node_path
+
+            current = next_node
+            node_path.append(current)
+        return node_path
+    
+    def simulated_annealing_search(self, start_coord:tuple, destination_coord:tuple, initial_temp=1000, cooling_rate=0.99, max_iterations=2000):
+        """
+        Tìm đường dùng simulated annealing
+        """
+        start = ox.distance.nearest_nodes(self.G, X=start_coord[1], Y=start_coord[0])
+        goal = ox.distance.nearest_nodes(self.G, X=destination_coord[1], Y=destination_coord[0])
+
+        current = start
+        node_path = [current]
+        T = initial_temp
+
+        for _ in range(max_iterations):
+            if current == goal:
+                return node_path
+            
+            neighbors = list(self.G.neighbors(current))
+            if not neighbors:
+                return None
+                # return node_path
+            
+            next_node = random.choice(neighbors)
+            
+            current_distance = self.haversine(current, goal)
+            next_distance = self.haversine(next_node, goal)
+            delta = next_distance - current_distance
+
+            if delta <= 0:
+                current = next_node
+                node_path.append(current)
+            else:
+                acceptance_prob = math.exp(-delta / T)
+                if delta < 0 or random.uniform(0,1) < acceptance_prob:
+                    current = next_node
+                    node_path.append(current)
+            T *= cooling_rate
+        return None
+        # return node_path
+    
+    def straight_path(self, path:list):
         """
         Xóa các đường đi vòng.
         """
