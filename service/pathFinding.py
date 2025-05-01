@@ -88,11 +88,7 @@ class PathFinding:
                 while current is not None:
                     path.append(current)
                     current = parents[current]
-                path.reverse()
-
-                # ✅ Convert node IDs to (lat, lon) tuples
-                latlon_path = [(self.G.nodes[node]['y'], self.G.nodes[node]['x']) for node in path]
-                return latlon_path
+                return path[::-1]
 
             if current in explored:
                 continue
